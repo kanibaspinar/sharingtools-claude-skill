@@ -138,17 +138,122 @@ List pending DM requests for account 8
 
 ---
 
+## MCP Server (for developers / self-hosted setups)
+
+If you want Claude to connect to Sharingtools **without** the packaged `.skill` file — or if you're building your own Claude integration — you can run the included MCP server locally. This is a standard Node.js package that exposes all 40 Sharingtools tools over the [Model Context Protocol](https://modelcontextprotocol.io).
+
+### Prerequisites
+
+- Node.js 18 or later
+- npm
+- A Sharingtools API key (`sht_...`)
+
+### Install
+
+```bash
+git clone https://github.com/kanibaspinar/sharingtools-claude-skill.git
+cd sharingtools-claude-skill/mcp-server
+npm install
+```
+
+### Configure your API key
+
+**Option A — environment variable (recommended):**
+```bash
+export SHARINGTOOLS_API_KEY=sht_your_key_here
+```
+
+**Option B — .env file:**
+```bash
+cp .env.example .env
+# Edit .env and paste your key
+```
+
+### Add to Claude Desktop
+
+Edit your Claude Desktop config file:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "sharingtools": {
+      "command": "node",
+      "args": ["/absolute/path/to/sharingtools-claude-skill/mcp-server/index.js"],
+      "env": {
+        "SHARINGTOOLS_API_KEY": "sht_your_key_here"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop — you'll see **sharingtools** listed as a connected MCP server.
+
+### Add to Claude Code
+
+```bash
+claude mcp add sharingtools \
+  --command "node /absolute/path/to/sharingtools-claude-skill/mcp-server/index.js" \
+  --env SHARINGTOOLS_API_KEY=sht_your_key_here
+```
+
+Or add it manually to your `~/.claude/claude_code_config.json`:
+```json
+{
+  "mcpServers": {
+    "sharingtools": {
+      "command": "node",
+      "args": ["/absolute/path/to/sharingtools-claude-skill/mcp-server/index.js"],
+      "env": {
+        "SHARINGTOOLS_API_KEY": "sht_your_key_here"
+      }
+    }
+  }
+}
+```
+
+### Test it
+
+```bash
+SHARINGTOOLS_API_KEY=sht_your_key node mcp-server/index.js
+# Should print: [sharingtools-mcp] Server running.
+```
+
+### Available MCP tools
+
+The server exposes **40 tools** covering the full Sharingtools API:
+
+| Category | Tools |
+|----------|-------|
+| Dashboard & User | `get_dashboard`, `get_user`, `update_user`, `get_statistics` |
+| Billing | `get_wallet`, `get_transactions`, `get_subscription`, `list_packages` |
+| Accounts | `list_accounts`, `get_account`, `add_account`, `login_account`, `complete_challenge`, `update_account`, `delete_account`, `get_account_stats` |
+| Posts | `list_posts`, `get_post`, `create_post`, `update_post`, `delete_post` |
+| Captions | `list_captions`, `create_caption`, `update_caption`, `delete_caption` |
+| Proxies & Keys | `list_proxies`, `get_api_keys`, `generate_api_key`, `revoke_api_key` |
+| Reactions Pro | `list_reactions_schedules`, `get_reactions_schedule`, `get_reactions_settings`, `update_reactions_settings`, `activate_reactions`, `pause_reactions`, `bulk_activate_reactions`, `bulk_pause_reactions`, `bulk_stop_reactions`, `get_reactions_logs`, `get_reactions_stats` |
+
+---
+
 ## File Structure
 
 ```
 sharingtools-claude-skill/
-├── sharingtools.skill          # Packaged skill — install this
+├── sharingtools.skill          # Packaged skill — install this in Claude Desktop/Cowork
 ├── SKILL.md                    # Main skill instructions (loaded by Claude)
 ├── references/
 │   ├── reactions.md            # Reactions Pro: all 100+ settings fields + target types
 │   ├── repost.md               # Repost Pro: schedules, targets, settings
 │   ├── modules.md              # Post Actions, Leads, AI-DM, Welcome DM, First Comment, InBox, Direct
 │   └── account-actions.md     # Per-account actions + admin endpoints
+├── mcp-server/
+│   ├── index.js                # MCP server — 40 tools, connects to Sharingtools REST API
+│   ├── package.json
+│   └── .env.example            # Copy to .env and add your API key
 └── README.md
 ```
 
